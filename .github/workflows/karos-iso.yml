@@ -1,0 +1,48 @@
+name: KarOS ISO Derle
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - karos.b64
+
+permissions:
+  contents: write
+
+jobs:
+  derle:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:trixie
+      options: --privileged
+    steps:
+      - name: Kaynagi al
+        uses: actions/checkout@v4
+
+      - name: Kiti ac
+        run: |
+          mkdir kit
+          base64 -d karos.b64 | tar -xz -C kit
+
+      - name: ISO derle
+        working-directory: kit
+        run: |
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Yayin olarak yukle (Releases sekmesinden indirilir)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: karos-1.0-${{ github.run_number }}
+          name: KarOS 1.0 (derleme ${{ github.run_number }})
+          body: ASUS TP200SA icin hafif, macOS gorunumlu KarOS. USB'ye Rufus, Ventoy veya balenaEtcher ile yazin.
+          files: |
+            kit/out/KarOS-1.0-amd64.iso
+            kit/out/KarOS-1.0-amd64.iso.sha256
+
+      - name: Derleme gunlugu (hata olursa)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: kit/build.log
